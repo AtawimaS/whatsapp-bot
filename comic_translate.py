@@ -1,44 +1,46 @@
 from PIL import Image, ImageDraw, ImageFont
 import easyocr
 import matplotlib.pyplot as plt
-import numpy as np
-from flask import Flask
-
-app = Flask(__name__)
-
-
 from googletrans import Translator
-import asyncio
+import numpy as np
+import base64
+from io import BytesIO
 
-def sync_translate(text, dest='id'):
-    translator = Translator()
-    result = translator.translate(text, dest=dest)
-    return result.text
 
-def translate_text(text):
-    translated = sync_translate(text)
-    return translated
-    # print(translated)
+async def comic_translating(image_file, dest='id'):
+    async def sync_translate(text, dest=dest):
+        try:
+            translator = Translator()
+            result = await translator.translate(text, dest=dest)
+            return result.text
+        except Exception as e:
+            print(f"Error during translation: {e}")
+            return text
 
-def take_color(image_path, x=5, y=5):
-    img = Image.open(image_path)
-    return img.getpixel((x, y))
-    # return (r,g,b)
+    async def translate_text(text):
+        translated = await sync_translate(text)
+        return translated
+        # print(translated)
 
-async def main():
+    def take_color(img, x=5, y=5):
+        # img = Image.open(image_path)
+        return img.getpixel((x, y))
+
+# async def main():
     print("Open Gambar 📖")
-    image = Image.open('image-3.png').convert("RGBA")
-
+    image = Image.open(image_file).convert("RGBA")
+    image_np = np.array(image)
     draw_image = ImageDraw.Draw(image)
 
     reader = easyocr.Reader(['en'])
-    results = reader.readtext('image-3.png', width_ths=2, slope_ths=0.4, link_threshold=0.4)
-
+    print("make bounding box, and read text")
+    results = reader.readtext(image_np, width_ths=2, slope_ths=0.4, link_threshold=0.4)
+    print("berhasil buat bounding box etc")
     font = ImageFont.truetype("arial.ttf", 16)
     top_left = results[0][0][0]
     x = top_left[0]
     y = top_left[1]
-    color = take_color('image-3.png', x=x, y=y)
+    color = take_color(image, x=x, y=y)
 
     # Memproses bounding box dan mengganti teks
     for (bbox, text, prob) in results:
@@ -47,19 +49,17 @@ async def main():
         bottom_right = tuple(map(int, bottom_right))
 
         x, y = top_right[0] + 1, bottom_left[1] + 8
-        translated_text = translate_text(text)
+        translated_text = await translate_text(text)
 
         draw_image.rectangle([top_left, bottom_right], fill=color)
-        # Asumsi fungsi take_color() sudah didefinisikan dan dapat dipanggil tanpa argumen
-        # color_plate = take_color(top_left)
-        # print(color, x,y)
-        # Menambahkan teks terjemahan di dalam bounding box
         text_position = (top_left[0] + 5, bottom_left[1] + (int(top_left[1] - bottom_left[1]) / 2) - 10)
         draw_image.text(text_position, translated_text, fill="black", font=font)
 
     # Menyimpan gambar hasil perubahan  
     plt.imshow(image)
     image.save('translated_comic_page1.png')
-
-if __name__ == "__main__":
-    main()
+    print("BERHASIL AKSES FUNCTION INI!!!!!")
+    buffered = BytesIO()  # Buffer untuk menyimpan gambar
+    image.save(buffered, format="PNG")  # Simpan gambar dalam buffer
+    img_base64 = base64.b64encode(buffered.getvalue()).decode("utf-8")  # Konversi buffer ke base64
+    return img_base64
