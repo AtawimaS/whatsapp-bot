@@ -1,43 +1,65 @@
 from PIL import Image, ImageDraw, ImageFont
-import matplotlib.pyplot as plt
-import cv2
 import easyocr
+import matplotlib.pyplot as plt
+import numpy as np
+from flask import Flask
+
+app = Flask(__name__)
+
+
 from googletrans import Translator
 import asyncio
 
-async def sync_translate(text, dest='id'):
+def sync_translate(text, dest='id'):
     translator = Translator()
-    result = await translator.translate(text, dest=dest)
+    result = translator.translate(text, dest=dest)
     return result.text
 
-async def translate_text(text):
-    translated = await sync_translate(text)
-    return translate_text
-    print(translated)
+def translate_text(text):
+    translated = sync_translate(text)
+    return translated
+    # print(translated)
 
-# Membaca gambar
-image = Image.open('image-3.png')
+def take_color(image_path, x=5, y=5):
+    img = Image.open(image_path)
+    return img.getpixel((x, y))
+    # return (r,g,b)
 
-reader = easyocr.Reader(['en', 'ch_sim', 'ch_tra', 'th', 'kn', 'ja'])
-results = reader.readtext('image-3.png', width_ths=1, slope_ths=0.4, link_threshold=0.4)  
+async def main():
+    print("Open Gambar 📖")
+    image = Image.open('image-3.png').convert("RGBA")
 
-font = ImageFont.truetype("arial.ttf", 16)
-draw = ImageDraw.Draw(image)
+    draw_image = ImageDraw.Draw(image)
 
-for (bbox, text, prob) in results:
-    (top_left, top_right, bottom_right, bottom_left) = bbox
-    top_left = tuple(map(int, top_left))
-    bottom_right = tuple(map(int, bottom_right))
+    reader = easyocr.Reader(['en'])
+    results = reader.readtext('image-3.png', width_ths=2, slope_ths=0.4, link_threshold=0.4)
 
-    # cv2.rectangle(image, top_left, bottom_right, (0, 0, 255), 2)
-    draw.rectangle([top_left, bottom_right], outline=(255, 0, 0), width=2, fill='white')
+    font = ImageFont.truetype("arial.ttf", 16)
+    top_left = results[0][0][0]
+    x = top_left[0]
+    y = top_left[1]
+    color = take_color('image-3.png', x=x, y=y)
 
-    translated_text = await translate_text(text)
+    # Memproses bounding box dan mengganti teks
+    for (bbox, text, prob) in results:
+        (top_left, top_right, bottom_right, bottom_left) = bbox
+        top_left = tuple(map(int, top_left))
+        bottom_right = tuple(map(int, bottom_right))
 
-    # Menambahkan teks terjemahan di dalam bounding box
-    text_position = (top_left[0]+5, bottom_left[1]+(int(top_left[1] - bottom_left[1])/2)) 
-    draw.text(text_position, translated_text, fill="black", font=font)
+        x, y = top_right[0] + 1, bottom_left[1] + 8
+        translated_text = translate_text(text)
 
-# Menyimpan gambar hasil perubahan
-plt.imshow(image)
-# image.save('translated_comic_page.png')     
+        draw_image.rectangle([top_left, bottom_right], fill=color)
+        # Asumsi fungsi take_color() sudah didefinisikan dan dapat dipanggil tanpa argumen
+        # color_plate = take_color(top_left)
+        # print(color, x,y)
+        # Menambahkan teks terjemahan di dalam bounding box
+        text_position = (top_left[0] + 5, bottom_left[1] + (int(top_left[1] - bottom_left[1]) / 2) - 10)
+        draw_image.text(text_position, translated_text, fill="black", font=font)
+
+    # Menyimpan gambar hasil perubahan  
+    plt.imshow(image)
+    image.save('translated_comic_page1.png')
+
+if __name__ == "__main__":
+    main()
