@@ -59,7 +59,7 @@ async def comic_translating(image_file, dest='id'):
     plt.imshow(image)
     image.save('translated_comic_page1.png')
     print("BERHASIL AKSES FUNCTION INI!!!!!")
-    buffered = BytesIO()  # Buffer untuk menyimpan gambar
-    image.save(buffered, format="PNG")  # Simpan gambar dalam buffer
+    buffered = BytesIO()  
+    image.save(buffered, format="PNG")  
     img_base64 = base64.b64encode(buffered.getvalue()).decode("utf-8")  # Konversi buffer ke base64
     return img_base64
