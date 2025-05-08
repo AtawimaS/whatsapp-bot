@@ -57,7 +57,7 @@ async def comic_translating(image_file, dest='id'):
 
     # Menyimpan gambar hasil perubahan  
     plt.imshow(image)
-    image.save('translated_comic_page1.png')
+    # image.save('translated_comic_page1.png')
     print("BERHASIL AKSES FUNCTION INI!!!!!")
     buffered = BytesIO()  
     image.save(buffered, format="PNG")  
