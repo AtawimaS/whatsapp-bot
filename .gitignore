@@ -42,3 +42,8 @@ docker-compose.*.yml
 # Package files
 package/
 *.deb
+
+*.png
+*.jpg
+*.jpeg
+*.gif
