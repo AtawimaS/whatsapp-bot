@@ -1,5 +1,4 @@
 const qrcodeTerminal = require('qrcode-terminal');
-const fs = require('fs/promises');
 const { Client, LocalAuth, MessageMedia } = require('whatsapp-web.js');
 
 const express = require('express')
@@ -121,18 +120,25 @@ client.on('message', async msg => {
                     const currentPrice = data_mention_with_price.price[i]
                     console.log(i, currentPeople)
                     console.log(i, currentPrice)
-                    // if (!isNaN(price)) {
-                        // const mentionedContact = getMentionInGrub.people[i].find(contact => contact.id.user === mentionedUser.replace('@', ''));
-                    // const phoneNumber = mentionedContact.number;
-                    // msg.reply(`Nomor telepon ${mentionedUser}: ${phoneNumber}, dengan harga: ${getMentionInGrub.price[i]}`);
                     msg.reply(`Nomor telepon : ${currentPeople}, dengan harga: ${currentPrice}`);
-                    // }
                 } 
             } else {
                 msg.reply("wrong input : '!patungan <all> <price> or !patungan <people> <price>'")
             }
         } catch (err) {
             msg.reply("wrong input : '!patungan <all> <price> or !patungan <people> <price>'")
+        }
+    }
+    else if (msg.body == "!all") {
+        let chat = await msg.getChat();
+        if (chat.isGroup) {
+            const mention = chat.participants.map(p => p.id._serialized);
+            const mention_text = mention.map(m => `@${m.split('@')[0]}`).join(' ');
+            client.sendMessage(msg.from, `${mention_text}`, {
+                mentions: mention
+            });
+        } else {
+            msg.reply('This command can only be used in a group!');
         }
     }
     else if (msg.body.startsWith("!creategroup")) {
