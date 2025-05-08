@@ -90,7 +90,7 @@ client.on('message', async msg => {
         });
         // console.log(send_json)
         msg.reply("⚙️Processing Image⚙️")
-    }else if (msg.body.startsWith("!test")) {
+    }else if (msg.body.startsWith("!pantungan")) {
         try {
             const parts = msg.body.split(' ');
             console.log(parts[1])
