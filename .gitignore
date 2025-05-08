@@ -1,6 +1,40 @@
 
+# Dependencies
 node_modules/
+
+# WhatsApp Web JS files
 .wwebjs_auth/
 .wwebjs_cache/
-tempCodeRunnerFile.js 
-*.pyc 
+
+# Python files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Environment
+.env
+.venv
+env/
+venv/
+
+# IDE
+.vscode/
+.idea/
+
+# Temporary files
+tempCodeRunnerFile.js
+*.log
+*.tmp
+
+# Generated files
+downloads/
+*.png
+*.jpg
+*.jpeg
+
+# Docker
+.docker/
+Dockerfile
+docker-compose.yml
+docker-compose.*.yml
+*.dockerignore
