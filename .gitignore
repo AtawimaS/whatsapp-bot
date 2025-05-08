@@ -38,3 +38,7 @@ Dockerfile
 docker-compose.yml
 docker-compose.*.yml
 *.dockerignore
+
+# Package files
+package/
+*.deb
