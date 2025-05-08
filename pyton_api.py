@@ -24,4 +24,4 @@ def comic():
         return jsonify({"status": "error", "message": "Expected JSON"}), 400
     
 
-app.run(debug=True)
+app.run(debug=True, port = 5000)
