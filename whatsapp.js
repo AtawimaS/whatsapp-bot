@@ -157,7 +157,7 @@ client.on('message', async msg => {
 
 client.initialize(debug = true);
 app.get('/test', async(req, res) => {
-    const phoneNumber = '+6285155496775'
+    const phoneNumber = 'phonenumber'
     const chatId = phoneNumber.substring(1) + '@c.us';
     const message = 'testing';
     try {
