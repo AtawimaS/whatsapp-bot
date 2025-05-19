@@ -48,3 +48,5 @@ package/
 *.jpeg
 *.gif
 *.sql
+
+testing.ipynb
