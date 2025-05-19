@@ -47,3 +47,4 @@ package/
 *.jpg
 *.jpeg
 *.gif
+*.sql
