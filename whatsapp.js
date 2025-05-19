@@ -66,6 +66,10 @@ client.on('message', async msg => {
     if (msg.body == "!ping") {
         msg.reply("P P P!")
     }
+
+/*
+    Comic translation
+*/
     else if (msg.body == '!comic' && msg.hasMedia) {
         const parts = msg.body.split(' ');
         const attachmentData = await msg.downloadMedia();
@@ -102,9 +106,9 @@ client.on('message', async msg => {
         });
         msg.reply("⚙️Processing Image⚙️")
 
-    /*
-        This function is using for split bill, if you're the one paying
-    */
+/*
+    This function is using for split bill, if you're the one paying
+*/
     }else if (msg.body.startsWith("!patunganme")) {
         try {
             const parts = msg.body.split(' ');
@@ -174,6 +178,56 @@ client.on('message', async msg => {
             msg.reply("wrong input : '!patungan <all> <price> or !patungan <people> <price>'")
         }
     }
+/*
+    To see all debt in group
+*/
+    else if (msg.body == "!viewdebt") {
+        let chat = await msg.getChat();
+        all_participant = chat.participants
+        peoples = chat.participants.map(p => p.id._serialized); 
+        people_list = peoples.filter(p => p != bot_num);
+        send_json = {
+            "people": people_list
+        }
+        console.log(people_list)
+        console.log(send_json)
+        if (chat.isGroup) {
+            const url = "http://127.0.0.1:5000/viewing_debt"
+            fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body:JSON.stringify(send_json)
+            }).then(response => {
+                if (!response.ok) {
+                  console.log('Network response was not ok (ViewDebt)');
+                }
+                return response.json();
+            }).then(responseData => {
+                let grouped = {};
+                for (let item of responseData.result) {
+                    if (!grouped[item.debtor]) {
+                        grouped[item.debtor] = [];
+                    }
+                    grouped[item.debtor].push(`@${item.creditor} => ${item.net_value}`);
+                }
+                let all_text = "";
+                for (let debtor in grouped) {
+                    all_text += `num : @${debtor}\nHas Debt to :\n`;
+                    all_text += grouped[debtor].join("\n") + "\n\n";
+                }
+                const mention = chat.participants.map(p => p.id._serialized);
+                client.sendMessage(msg.from, all_text,
+                    {mentions: mention}
+                )
+                // msg.reply(all_text)
+            })
+        }
+    }
+/*
+    Mention all people in group
+*/
     else if (msg.body == "!all") {
         let chat = await msg.getChat();
         if (chat.isGroup) {
@@ -186,6 +240,10 @@ client.on('message', async msg => {
             msg.reply('This command can only be used in a group!');
         }
     }
+/*
+    Create group
+    note : under development
+*/
     else if (msg.body.startsWith("!creategroup")) {
         try {
             const parts = msg.body.split(' ');

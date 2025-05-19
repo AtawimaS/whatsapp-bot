@@ -2,7 +2,7 @@ from flask import Flask, request, jsonify
 import base64
 import io
 from Feature.comic_translate import comic_translating
-from Feature.toDB import add_transaction
+from Feature.toDB import add_transaction, view_debt
 import asyncio
 
 app = Flask(__name__)
@@ -34,5 +34,14 @@ def add_trx():
     else:
         return jsonify({"status": "error", "message": "Expected JSON"}), 400
 
+@app.route("/viewing_debt", methods = ['POST'])
+def viewing_debt():
+    print("viewing debt...")
+    if request.is_json:
+        data = request.get_json()
+        # print(data)
+        people = data.get("people")
+        result = view_debt(people)
+    return jsonify({"status": "success", "result": result}), 200
 
-app.run(debug=True, port = 5000)
+app.run(debug=True, port = 5000)    

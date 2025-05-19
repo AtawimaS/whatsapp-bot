@@ -1,7 +1,8 @@
 from sqlalchemy import create_engine, Column, Integer, String, Float, DateTime, Enum, func
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
-from sqlalchemy import text
+from sqlalchemy import text, bindparam
+import json
 import re
 
 # Inisialisasi koneksi database
@@ -11,7 +12,7 @@ engine = create_engine(database_url)
 SessionLocal = sessionmaker(bind=engine)
 
 # add transaction to db
-def add_transaction(debtors, creditors, values, type, description=""):
+def add_transaction(creditors, debtors, values, type, description=""):
     db = SessionLocal()
     try:
         query = text("""
@@ -51,14 +52,33 @@ def add_transaction(debtors, creditors, values, type, description=""):
     finally:
         db.close()
 
-def view_debt():
+
+def view_debt(peoples):
     db = SessionLocal()
+    all_people = []
+    
+    if isinstance(peoples, list):
+        for people in peoples:
+            people_re = re.findall("[0-9]", people)
+            people_num = ''.join(people_re)
+            all_people.append(people_num)
+    else:
+        people_re = re.findall("[0-9]", peoples)
+        people_num = ''.join(people_re)
+        all_people = [people_num] 
+    
     try:
         query = text("""
-            SELECT * FROM vw_debt
-        """)
-        result = db.execute(query).fetchall()
-        return result
+            SELECT * FROM vw_total_debt
+            WHERE debtor IN :people OR creditor IN :people
+        """).bindparams(bindparam("people", expanding=True))
+        
+        result = db.execute(query, {"people": all_people})
+        rows = result.fetchall()
+        columns = result.keys()
+        result_list = [dict(zip(columns, row)) for row in rows]
+        
+        return result_list
     except Exception as e:
         raise e
     finally:
