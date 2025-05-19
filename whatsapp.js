@@ -1,9 +1,9 @@
 const qrcodeTerminal = require('qrcode-terminal');
-const { Client, LocalAuth, MessageMedia } = require('whatsapp-web.js');
+const { Client, LocalAuth, MessageMedia, Poll , PollVote} = require('whatsapp-web.js');
 
-const express = require('express')
-const app = express()
-const port = 3000
+// const express = require('express')
+// const app = express()
+// const port = 3000
 
 function isStringAngka(str) {
     if (typeof str !== 'string') {
@@ -32,6 +32,16 @@ function getMentionInGrub(parts) {
     }
 }
 
+// function send_polling() {
+//     const poll = new Poll('Cats or Dogs?', ['Cats', 'Dogs'], {
+//         allowMultipleAnswers: false 
+//     });
+//     const pollMessage = await chat.sendMessage(poll);
+//     const pollId = pollMessage.id._serialized;
+//     console.log(pollMessage)
+//     console.log(`Poll created with ID: ${pollId}`);
+// }
+
 const client = new Client({
     authStrategy: new LocalAuth()
 });
@@ -47,6 +57,9 @@ client.on('qr', async (qr) => {
 
 client.on('ready', () => {
     console.log('✅ WhatsApp client is ready!');
+    bot_num =client.info.me._serialized
+    console.log(bot_num)
+    // console.log(client.info)
 });
 
 client.on('message', async msg => {
@@ -87,22 +100,55 @@ client.on('message', async msg => {
         }).catch(error => {
             console.error('Error:', error);
         });
-        // console.log(send_json)
         msg.reply("⚙️Processing Image⚙️")
-    }else if (msg.body.startsWith("!pantungan")) {
+
+    /*
+        This function is using for split bill, if you're the one paying
+    */
+    }else if (msg.body.startsWith("!patunganme")) {
         try {
             const parts = msg.body.split(' ');
-            console.log(parts[1])
-            console.log(parts[2])
             if (parts[1].toLowerCase() == 'all') {
                 let chat = await msg.getChat();
                 if (chat.isGroup) {
-                    total_people = chat.participants.length-1
+                    total_people = chat.participants.length - 1
+                    creditor = msg.author
+                    console.log(creditor)
+                    // console.log(chat.participants)/
+                    debtors = chat.participants.map(p => p.id._serialized);
+                    debtor_list = debtors.filter(p => p != bot_num && p != creditor);
+                    console.log(debtor_list)
                     harga = parseInt(parts[2]);
-                    // console.log(harga)
                     if (!isNaN(harga)) {
                         total = harga / (total_people);
                         msg.reply(`total harga : ${harga} dibagi ${total_people} = ${total}`);
+                        desc = `Split Bill to ${creditor}`
+                        if (msg.body.match(/#.*/) != null) {
+                            desc = msg.body.match(/#.*/)[0].substring(1)
+                        }
+                        send_json = {
+                            "debtors": debtor_list,
+                            "creditors": Array(debtor_list.length).fill(creditor),
+                            "value": Array(debtor_list.length).fill(total),
+                            "description": desc,
+                            "type" : "Debt"
+                        }
+                        const url = "http://127.0.0.1:5000/add_trx"
+                        fetch(url, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body:JSON.stringify(send_json)
+                        }).then(response => {
+                            if (!response.ok) {
+                              console.log('Network response was not ok (PatunganMe)');
+                            }
+                            return response.json();
+                        }).then(responseData => {
+                            console.log('Success:', responseData);
+                            msg.reply(`Success add transaction to ${debtor_list.length} people`)
+                        })
                     } else {
                         msg.reply("Price is not valid")
                     }
@@ -110,7 +156,6 @@ client.on('message', async msg => {
                     msg.reply('This command can only be used in a group!');
                 }
             } else if (parts[1].startsWith('@')) {
-                // console.log("Mention terdeteksi:", parts[1]);
                 const data_mention_with_price = getMentionInGrub(parts)
                 length = data_mention_with_price.people.length
                 console.log(data_mention_with_price)
@@ -156,22 +201,23 @@ client.on('message', async msg => {
         } catch (err) {
             msg.reply("wrong input")
         }
-    }
-        
+    }   
 });
 
 
 client.initialize(debug = true);
-app.get('/test', async(req, res) => {
-    const phoneNumber = 'phonenumber'
-    const chatId = phoneNumber.substring(1) + '@c.us';
-    const message = 'testing';
-    try {
-        await client.sendMessage(chatId, message);
-        res.send(`berhasil kirim ke nomor ${phoneNumber}`)
-    } catch {
-        res.send(`gagal`)
-    }
-  })
+
+
+// app.get('/test', async(req, res) => {
+//     const phoneNumber = 'phonenumber'
+//     const chatId = phoneNumber.substring(1) + '@c.us';
+//     const message = 'testing';
+//     try {
+//         await client.sendMessage(chatId, message);
+//         res.send(`berhasil kirim ke nomor ${phoneNumber}`)
+//     } catch {
+//         res.send(`gagal`)
+//     }
+//   })
   
-app.listen(port,debug = true)
+// app.listen(port,debug = true)
