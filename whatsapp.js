@@ -12,17 +12,14 @@ function isStringAngka(str) {
     return !isNaN(parseFloat(str)) && isFinite(Number(str));
   }
 
-function getMentionInGrub(parts) {
+  function getMentionInGrub(parts) {
     const people = []
     const price = []
     for (let i = 1; i < parts.length; i++){
         if (parts[i].startsWith("@")) {
-            people.push(parts[i])
+            people.push(parts[i].trim().split(' ')[0])
         } else if(isStringAngka(parts[i])){
-            price.push(parts[i])
-        }
-        else{
-            people[people.length-1] = people[people.length-1] + " " + parts[i]
+            price.push(parts[i].trim())
         }
     }
     if (price.length != 0) {
@@ -111,25 +108,28 @@ client.on('message', async msg => {
 */
     }else if (msg.body.startsWith("!patunganme")) {
         try {
-            const parts = msg.body.split(' ');
+            // console.log(parts)
+            creditor = msg.author;
+            message = msg.body;
+            let parts = message.split(" ")
+            desc = `Split Bill to ${creditor}`;
+            if (msg.body.match(/#.*/) != null) {
+                desc = msg.body.match(/#.*/)[0].substring(1);
+                message_without_desc = message.split("#")[0]
+                parts = message_without_desc.split(" ")
+            }
+            let chat = await msg.getChat();
             if (parts[1].toLowerCase() == 'all') {
-                let chat = await msg.getChat();
                 if (chat.isGroup) {
                     total_people = chat.participants.length - 1
-                    creditor = msg.author
-                    console.log(creditor)
+                    // console.log(creditor)
                     // console.log(chat.participants)/
                     debtors = chat.participants.map(p => p.id._serialized);
                     debtor_list = debtors.filter(p => p != bot_num && p != creditor);
                     console.log(debtor_list)
-                    harga = parseInt(parts[2]);
                     if (!isNaN(harga)) {
                         total = harga / (total_people);
                         msg.reply(`total harga : ${harga} dibagi ${total_people} = ${total}`);
-                        desc = `Split Bill to ${creditor}`
-                        if (msg.body.match(/#.*/) != null) {
-                            desc = msg.body.match(/#.*/)[0].substring(1)
-                        }
                         send_json = {
                             "debtors": debtor_list,
                             "creditors": Array(debtor_list.length).fill(creditor),
@@ -160,22 +160,50 @@ client.on('message', async msg => {
                     msg.reply('This command can only be used in a group!');
                 }
             } else if (parts[1].startsWith('@')) {
-                const data_mention_with_price = getMentionInGrub(parts)
-                length = data_mention_with_price.people.length
-                console.log(data_mention_with_price)
-                console.log(length)
-                for (let i = 0; i < length; i++){
-                    const currentPeople = data_mention_with_price.people[i]
-                    const currentPrice = data_mention_with_price.price[i]
-                    console.log(i, currentPeople)
-                    console.log(i, currentPrice)
-                    msg.reply(`Nomor telepon : ${currentPeople}, dengan harga: ${currentPrice}`);
-                } 
+                if (chat.isGroup) {
+                    console.log("test1")
+                    const data_mention_with_price = getMentionInGrub(parts)
+                    console.log(data_mention_with_price)
+                    send_json = {
+                        "debtors": data_mention_with_price.people,
+                        "creditors": Array(data_mention_with_price.people.length).fill(creditor),
+                        "value": data_mention_with_price.price,
+                        "description": desc,
+                        "type": "Debt"
+                    }
+                    console.log(send_json)
+                    const url = "http://127.0.0.1:5000/add_trx"
+                    fetch(url, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body:JSON.stringify(send_json)
+                    }).then(response => {
+                        if (!response.ok) {
+                            console.log('Network response was not ok (PatunganMe)');
+                        }
+                        return response.json();
+                    }).then(responseData => {
+                        console.log('Success:', responseData);
+                        msg.reply(`Success add transaction to ${data_mention_with_price.people.length} people`)
+                    })
+                } else {
+                    msg.reply("Price is invalid!")
+                }
             } else {
-                msg.reply("wrong input : '!patungan <all> <price> or !patungan <people> <price>'")
+                msg.reply("This command can only used in a group")
             }
+                // for (let i = 0; i < length; i++){
+                //     const currentPeople = data_mention_with_price.people[i]
+                //     const currentPrice = data_mention_with_price.price[i]
+                //     console.log(i, currentPeople)
+                //     console.log(i, currentPrice)
+                //     msg.reply(`Nomor telepon : ${currentPeople}, dengan harga: ${currentPrice}`);
+                // } 
         } catch (err) {
-            msg.reply("wrong input : '!patungan <all> <price> or !patungan <people> <price>'")
+            console.error(err);
+            msg.reply("wrong input : '!patunganme <all> <price> or !patunganme <people> <price>'")
         }
     }
 /*
