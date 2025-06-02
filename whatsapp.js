@@ -357,6 +357,21 @@ client.on('message', async msg => {
         }
     }
 /*
+    split bill using invoice or Receipt
+*/
+    else if (msg.body.startsWith("$"), msg.hasMedia) {
+        let chat = await msg.getChat();
+        const attachmentData = await msg.downloadMedia();
+        if (chat.isGroup) {
+            const message_splitting = msg.body.split('$')
+            const message_delete_first_index = message_splitting.slice(1)
+            const message_cleaned = message_delete_first_index.join('')
+            console.log(message_cleaned)
+        } else {
+            msg.reply("Must in Group!!!")
+        }
+    }
+/*
     Create group
     note : under development
 */
@@ -379,7 +394,7 @@ client.on('message', async msg => {
 });
 
 
-client.initialize(debug = true);
+client.initialize();
 
 
 // app.get('/test', async(req, res) => {
