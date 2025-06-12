@@ -341,6 +341,16 @@ client.on('message', async msg => {
         }
     }
 /*
+    Reminder into group with tag all member in a group
+*/
+    else if (msg.body.toLowerCase() == '!reminder') {
+        msg.reply("format for '!reminder' : !reminder <time> <#description(optional)>\nformat for <time> : \n1. 'DD/MM/YYYY:hh-mm'\n2. 'DD/MM/YYYY' -> time will trigger in 00:01\n3. hh-mm -> date will set in today\n note : DD -> day, MM -> Month, YYYY -> year, hh -> hour, mm -> minute")
+    }
+    else if (msg.body.toLocaleLowerCase().startsWith('!reminder')) {
+        const parts = msg.body.split(' ');
+
+    }
+/*
     Mention all people in group
 */
     else if (msg.body == "!all") {
