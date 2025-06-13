@@ -1,6 +1,26 @@
 const qrcodeTerminal = require('qrcode-terminal');
 const { Client, LocalAuth, MessageMedia, Poll , PollVote} = require('whatsapp-web.js');
+const moment = require('moment');
+const fs = require('fs');
+const path = require('path');
 
+function loadReminders() {
+    try {
+        const data = fs.readFileSync('reminders.json', 'utf8');
+        return JSON.parse(data);
+    } catch (err) {
+        console.error('Error loading reminders:', err);
+        return [];
+    }
+}
+
+function saveReminders(reminders) {
+    try {
+        fs.writeFileSync('reminders.json', JSON.stringify(reminders, null, 2));
+    } catch (err) {
+        console.error('Error saving reminders:', err);
+    }
+}
 // const express = require('express')
 // const app = express()
 // const port = 3000
@@ -29,6 +49,20 @@ function isStringAngka(str) {
     }
 }
 
+function change_to_utc(datestr, utc = 7){
+    const datetime = datestr.split(':');
+    const [day, month, year] = datetime[0].split('-');
+    const [hour, minute] = datetime[1].split('-');
+    const localdate = new Date(
+        parseInt(year),
+        parseInt(month)-1, 
+        parseInt(day),
+        parseInt(hour),
+        parseInt(minute)
+    );
+    // localdate.setHours(localdate.getHours() - (utc));
+    return localdate.toISOString();
+}
 // function send_polling() {
 //     const poll = new Poll('Cats or Dogs?', ['Cats', 'Dogs'], {
 //         allowMultipleAnswers: false 
@@ -52,12 +86,45 @@ client.on('qr', async (qr) => {
     qrcodeTerminal.generate(qr, { small: true });
 });
 
+let reminders = loadReminders();
 client.on('ready', () => {
     console.log('✅ WhatsApp client is ready!');
     bot_num = client.info.me._serialized
     bot_num_user = client.info.me.user
     console.log(bot_num)
     console.log(bot_num_user)
+    setInterval(async () => {
+        const now = new Date();
+        reminders = loadReminders();
+        for (const reminder of reminders) {
+    
+            if (reminder.sent === false) {
+                // console.log(reminder)
+                const reminderDate = new Date(reminder.datetime);
+                if ((reminderDate - now) < 5000) {
+                    // console.log(reminder)
+                    // console.log(reminderDate)
+                    // console.log(now)
+                    // console.log(reminderDate - now)
+                    try {
+                        const chat = await client.getChatById(reminder.groupId);
+                        const mention = chat.participants.map(p => p.id._serialized);
+                        const mentions = mention.filter(m => m !== bot_num);
+                        const mention_text = mentions.map(m => `@${m.split('@')[0]}`).join(' ');
+        
+                        await client.sendMessage(chat.id._serialized, `🔔 Reminder: *${reminder.description}* ╰(*°▽°*)╯\n${mention_text}`, {
+                            mentions: mentions
+                        });
+        
+                        reminder.sent = true;
+                        saveReminders(reminders); // Simpan perubahan
+                    } catch (err) {
+                        console.error("❌ Error sending reminder:", err);
+                    }
+                }   
+            }
+        }
+    }, 10000);    
 });
 
 client.on('message', async msg => {
@@ -202,7 +269,7 @@ client.on('message', async msg => {
         This function is using for split bill, if your friend is paying
     */
     else if (msg.body.startsWith("!patunganto")) {
-        try {
+        try {s
             let parts = msg.body.split(" ")
             creditor = parts[1];
             // message = msg.body;
@@ -347,11 +414,61 @@ client.on('message', async msg => {
         msg.reply("format for '!reminder' : !reminder <time> <#description(optional)>\nformat for <time> : \n1. 'DD/MM/YYYY:hh-mm'\n2. 'DD/MM/YYYY' -> time will trigger in 00:01\n3. hh-mm -> date will set in today\n note : DD -> day, MM -> Month, YYYY -> year, hh -> hour, mm -> minute")
     }
     else if (msg.body.toLocaleLowerCase().startsWith('!reminder')) {
-        const parts = msg.body.split(' ');
+        const patern_date_time = /^(\d{2})-(\d{2})-(\d{4}):(\d{2})-(\d{2})$/;
 
+        const patern_time = /^(\d{2})-(\d{2})$/;
+        const patern_date = /^(\d{2})-(\d{2})-(\d{4})$/;
+        const parts = msg.body.split(' ');
+        let  Checklist = false
+        const now = new Date
+        const iso = now.toISOString()
+        if (patern_date_time.test(parts[1])) {
+            true_time = change_to_utc(parts[1])
+            if (parts.length > 2) {
+                desc = parts.slice(2,parts.length).join(" ")
+            }else {
+                desc = "Reminders!!"
+            }
+            Checklist = true
+        } else if (patern_time.test(parts[1])) {
+            const [date, time] = iso.split('T')
+            const [year, month, day] = date.split('-');
+            full_date_time = `${day}-${month}-${year}` + ":" + parts[1] 
+            console.log(full_date_time)
+            true_time = change_to_utc(full_date_time)
+            if (parts.length > 2) {
+                desc = parts.slice(2,parts.length).join(" ")
+            }else {
+                desc = "Reminders!!"
+            }
+            Checklist = true
+        } else if (patern_date.test(parts[1])) {
+            full_date_time = parts[1] + ":" + '07-00'
+            true_time = change_to_utc(full_date_time)
+            console.log(true_time)
+            if (parts.length > 2) {
+                desc = parts.slice(2,parts.length).join(" ")
+            }else {
+                desc = "Reminders!!"
+            }
+            Checklist = true
+        }else {
+            msg.reply("Wrong format for time")
+        }
+        if (Checklist == true) {
+            const reminder = {
+                groupId: msg.from,
+                datetime: true_time,
+                description: desc,
+                sent: false
+            };
+            reminders.push(reminder)
+            saveReminders(reminders)
+            msg.reply(`Reminder set for ${full_date_time} ✍️(◔◡◔)`);
+        }
     }
 /*
-    Mention all people in group
+    Mention all people in group;
 */
     else if (msg.body == "!all") {
         let chat = await msg.getChat();
