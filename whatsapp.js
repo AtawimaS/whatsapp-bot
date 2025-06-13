@@ -2,11 +2,18 @@ const qrcodeTerminal = require('qrcode-terminal');
 const { Client, LocalAuth, MessageMedia, Poll , PollVote} = require('whatsapp-web.js');
 const moment = require('moment');
 const fs = require('fs');
-const path = require('path');
+
+const path = 'reminders.json';
 
 function loadReminders() {
     try {
-        const data = fs.readFileSync('reminders.json', 'utf8');
+        // Cek dan buat file jika belum ada
+        if (!fs.existsSync(path)) {
+            fs.writeFileSync(path, JSON.stringify([], null, 2));
+        }
+
+        // Baca dan parse data
+        const data = fs.readFileSync(path, 'utf8');
         return JSON.parse(data);
     } catch (err) {
         console.error('Error loading reminders:', err);
