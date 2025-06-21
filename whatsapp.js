@@ -139,9 +139,9 @@ client.on('message', async msg => {
         msg.reply("P P P!")
     }
 
-/*
-    Comic translation
-*/
+    /*
+        Comic translation
+    */
     else if (msg.body == '!comic' && msg.hasMedia) {
         const parts = msg.body.split(' ');
         const attachmentData = await msg.downloadMedia();
@@ -157,31 +157,28 @@ client.on('message', async msg => {
             }
         }
         const url = "http://127.0.0.1:5000/comic"
-        fetch(url, {
+        const response = await fetch(url, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
-            body:JSON.stringify(send_json)
-        }).then(response => {
-            if (!response.ok) {
-              throw new Error('Network response was not ok');
-            }
-            return response.json();
-        }).then(responseData => {
-            console.log('Success:', responseData);
-            const base64Image = responseData.image
-            const media = new MessageMedia('image/png', base64Image, 'translated_comic.png');
-            client.sendMessage(msg.from,media)
-        }).catch(error => {
-            console.error('Error:', error);
-        });
+            body: JSON.stringify(send_json)
+        })
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        const responseData = await response.json();
+        console.log('Success:', responseData);
+        const base64Image = responseData.image
+        const media = new MessageMedia('image/png', base64Image, 'translated_comic.png');
+        client.sendMessage(msg.from, media)
         msg.reply("⚙️Processing Image⚙️")
+    }
 
 /*
     This function is using for split bill, if you're the one paying
 */
-    }else if (msg.body.startsWith("!patunganme")) {
+    else if (msg.body.startsWith("!patunganme")) {
         try {
             // console.log(parts)
             creditor = msg.author;
@@ -217,15 +214,13 @@ client.on('message', async msg => {
                                 'Content-Type': 'application/json'
                             },
                             body:JSON.stringify(send_json)
-                        }).then(response => {
+                        })
                             if (!response.ok) {
-                              console.log('Network response was not ok (PatunganMe)');
+                                throw new Error('Network response was not ok (PatunganMe)');                    
                             }
-                            return response.json();
-                        }).then(responseData => {
+                            const responseData = await response.json();
                             console.log('Success:', responseData);
                             msg.reply(`Success add transaction to ${debtor_list.length} people`)
-                        })
                     } else {
                         msg.reply("Price is not valid")
                     }
@@ -246,21 +241,19 @@ client.on('message', async msg => {
                     }
                     console.log(send_json)
                     const url = "http://127.0.0.1:5000/add_trx"
-                    fetch(url, {
+                    const response = await fetch(url, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json'
                         },
                         body:JSON.stringify(send_json)
-                    }).then(response => {
-                        if (!response.ok) {
-                            console.log('Network response was not ok (PatunganMe)');
-                        }
-                        return response.json();
-                    }).then(responseData => {
-                        console.log('Success:', responseData);
-                        msg.reply(`Success add transaction to ${data_mention_with_price.people.length} people`)
                     })
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok (PatunganMe)');                    
+                    }
+                    const responseData = await response.json();
+                    console.log('Success:', responseData);
+                    msg.reply(`Success add transaction to ${data_mention_with_price.people.length} people`)
                 } else {
                     msg.reply("Price is invalid!")
                 }
@@ -305,21 +298,19 @@ client.on('message', async msg => {
                             "type" : "Debt"
                         }
                         const url = "http://127.0.0.1:5000/add_trx"
-                        fetch(url, {
+                        const response = await fetch(url, {
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json'
                             },
-                            body:JSON.stringify(send_json)
-                        }).then(response => {
-                            if (!response.ok) {
-                              console.log('Network response was not ok (PatunganTo)');
-                            }
-                            return response.json();
-                        }).then(responseData => {
-                            console.log('Success:', responseData);
-                            msg.reply(`Success add transaction to ${debtor_list.length} people`)
+                            body: JSON.stringify(send_json)
                         })
+                        if (!response.ok) {
+                            throw new Error('Network response was not ok (PatunganTo)');                    
+                        }
+                        const responseData = await response.json();
+                        console.log('Success:', responseData);
+                        msg.reply(`Success add transaction to ${debtor_list.length} people`)
                     } else {
                         msg.reply("Price is not valid")
                     }
@@ -341,21 +332,20 @@ client.on('message', async msg => {
                     }
                     console.log(send_json)
                     const url = "http://127.0.0.1:5000/add_trx"
-                    fetch(url, {
+                    const response = await fetch(url, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json'
                         },
                         body:JSON.stringify(send_json)
-                    }).then(response => {
-                        if (!response.ok) {
-                            console.log('Network response was not ok (PatunganTo)');
-                        }
-                        return response.json();
-                    }).then(responseData => {
-                        console.log('Success:', responseData);
-                        msg.reply(`Success add transaction to ${data_mention_with_price.people.length} people`)
                     })
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok (PatunganTo)');                   
+                        
+                    }
+                    const responseData = await response.json();
+                    console.log('Success:', responseData);
+                    msg.reply(`Success add transaction to ${data_mention_with_price.people.length} people`)
                 } else {
                     msg.reply("Price is invalid!")
                 }
@@ -382,36 +372,34 @@ client.on('message', async msg => {
         console.log(send_json)
         if (chat.isGroup) {
             const url = "http://127.0.0.1:5000/viewing_debt"
-            fetch(url, {
+            const response = await fetch(url, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
                 body:JSON.stringify(send_json)
-            }).then(response => {
-                if (!response.ok) {
-                  console.log('Network response was not ok (ViewDebt)');
-                }
-                return response.json();
-            }).then(responseData => {
-                let grouped = {};
-                for (let item of responseData.result) {
-                    if (!grouped[item.debtor]) {
-                        grouped[item.debtor] = [];
-                    }
-                    grouped[item.debtor].push(`@${item.creditor} => ${item.net_value}`);
-                }
-                let all_text = "";
-                for (let debtor in grouped) {
-                    all_text += `num : @${debtor}\nHas Debt to :\n`;
-                    all_text += grouped[debtor].join("\n") + "\n\n";
-                }
-                const mention = chat.participants.map(p => p.id._serialized);
-                client.sendMessage(msg.from, all_text,
-                    {mentions: mention}
-                )
-                // msg.reply(all_text)
             })
+            if (!response.ok) {
+                throw new Error('Network response was not ok (ViewDebt)');                    
+            }
+            const responseData = await response.json();
+            let grouped = {};
+            for (let item of responseData.result) {
+                if (!grouped[item.debtor]) {
+                    grouped[item.debtor] = [];
+                }
+                grouped[item.debtor].push(`@${item.creditor} => ${item.net_value}`);
+            }
+            let all_text = "";
+            for (let debtor in grouped) {
+                all_text += `num : @${debtor}\nHas Debt to :\n`;
+                all_text += grouped[debtor].join("\n") + "\n\n";
+            }
+            const mention = chat.participants.map(p => p.id._serialized);
+            client.sendMessage(msg.from, all_text,
+                {mentions: mention}
+            )
+            // msg.reply(all_text)
         }
     }
 /*
