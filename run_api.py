@@ -39,7 +39,6 @@ def viewing_debt():
     print("viewing debt...")
     if request.is_json:
         data = request.get_json()
-        # print(data)
         people = data.get("people")
         result = view_debt(people)
     return jsonify({"status": "success", "result": result}), 200
